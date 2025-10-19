@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; 
 import { signUp, login, loginWithGoogle } from "../auth";
-import toast, { Toaster } from "react-hot-toast";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -19,31 +18,33 @@ export default function Auth() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!form.email || !form.password || (!isLogin && !form.name)) {
-      toast.error("Please fill in all fields!");
-      return;
-    }
-
     try {
       if (isLogin) {
         // LOGIN
         const userCredential = await login(form.email, form.password);
         const token = await userCredential.user.getIdToken();
-        localStorage.setItem("authToken", token);
+        localStorage.setItem("authToken", token); // <--- store token
 
-        toast.success("Logged in successfully!");
+        const response = await fetch("https://amazonclone-1lul.onrender.com/api/protected", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token,
+          },
+        });
 
-        navigate("/product-home");
+        const userData = await response.json();
+        console.log("User Data:", userData);
+
+        
+        navigate("/product-home"); 
       } else {
-        // SIGNUP
         await signUp(form.name, form.email, form.password);
-        toast.success("Account created successfully!");
-        navigate("/login");
+        
+        navigate("/login"); 
       }
     } catch (error) {
-      console.error("Authentication Error:", error);
-      toast.error(error.message || "Something went wrong!");
+      console.error("Error during authentication:", error);
     }
   };
 
@@ -51,21 +52,30 @@ export default function Auth() {
     try {
       const { user } = await loginWithGoogle();
       const token = await user.getIdToken();
-      localStorage.setItem("authToken", token);
+      localStorage.setItem("authToken", token); 
 
-      toast.success("Signed in with Google!");
+      
+      const response = await fetch("https://amazonclone-1lul.onrender.com/api/protected", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        },
+      });
 
+      const userData = await response.json();
+      console.log("Google User:", user);
+      console.log("Backend Data:", userData);
+
+      // Redirect to ProductHomePage
       navigate("/");
     } catch (error) {
-      console.error("Google Sign-In Error:", error);
-      toast.error(error.message || "Google sign-in failed!");
+      console.error("Google sign-in error:", error);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-      <Toaster position="top-right" />
-
       <Link to="/" className="mb-6">
         <img
           src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg"
@@ -115,7 +125,9 @@ export default function Auth() {
               name="password"
               value={form.password}
               onChange={handleChange}
-              placeholder={isLogin ? "Enter your password" : "At least 6 characters"}
+              placeholder={
+                isLogin ? "Enter your password" : "At least 6 characters"
+              }
               className="mt-1 w-full border border-gray-300 rounded-sm p-2 focus:ring-1 focus:ring-yellow-500 focus:outline-none"
               required
             />
@@ -156,14 +168,20 @@ export default function Auth() {
         {isLogin ? (
           <>
             <span>New to Amazon?</span>
-            <button onClick={toggleMode} className="text-blue-600 hover:underline">
+            <button
+              onClick={toggleMode}
+              className="text-blue-600 hover:underline"
+            >
               Create your Amazon account
             </button>
           </>
         ) : (
           <>
             <span>Already have an account?</span>
-            <button onClick={toggleMode} className="text-blue-600 hover:underline">
+            <button
+              onClick={toggleMode}
+              className="text-blue-600 hover:underline"
+            >
               Sign-In
             </button>
           </>
@@ -171,4 +189,4 @@ export default function Auth() {
       </div>
     </div>
   );
-}
+} 
